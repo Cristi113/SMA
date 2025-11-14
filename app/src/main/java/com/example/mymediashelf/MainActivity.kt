@@ -1,4 +1,4 @@
-package com.example.mymediashelf
+package com.mymediashelf.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,6 +7,6 @@ import androidx.compose.material3.Text
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { Text("Hello, MyMediaShelf") } // fără Theme încă
+        setContent { Text("Hello, MyMediaShelf") }
     }
 }
