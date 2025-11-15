@@ -2,4 +2,44 @@
     <string name="app_name">MyMediaShelf</string>
     <string name="random_pick">Random Pick</string>
     <string name="got_it">Got it</string>
+
+    <string name="home_title">MyMediaShelf</string>
+    <string name="home_subtitle">Organize your media collection</string>
+    <string name="home_open_items">Open Items</string>
+    <string name="home_view_lists">View Lists</string>
+    <string name="home_items_desc">Manage your media items</string>
+    <string name="home_tags_desc">Organize with tags</string>
+    <string name="home_lists_desc">Create custom lists</string>
+    <string name="home_section_items">Items</string>
+    <string name="home_library_snapshot">Library Snapshot</string>
+    <string name="home_stat_items">Items: %d</string>
+    <string name="home_stat_tags">Tags: %d</string>
+    <string name="home_stat_lists">Lists: %d</string>
+
+    <string name="nav_home">Home</string>
+    <string name="nav_items">Items</string>
+    <string name="nav_tags">Tags</string>
+    <string name="nav_lists">Lists</string>
+
+    <string name="items_screen_title">Items</string>
+    <string name="items_add_new">Add New Item</string>
+    <string name="items_title_label">Title</string>
+    <string name="items_title_hint">Enter item title</string>
+    <string name="items_type_label">Type</string>
+    <string name="items_year_label">Year</string>
+    <string name="items_year_hint">Enter year</string>
+    <string name="items_status_label">Status</string>
+    <string name="items_favorite_label">Favorite</string>
+    <string name="items_rating_label">Rating</string>
+    <string name="items_rating_hint">1-10</string>
+    <string name="items_comment_label">Comment</string>
+    <string name="items_comment_hint">Add a comment</string>
+    <string name="items_add_button">Add Item</string>
+    <string name="items_save">Save</string>
+    <string name="items_delete">Delete</string>
+
+    <string name="search_screen_title">Search</string>
+
+    <string name="edit">Edit</string>
+    <string name="cancel">Cancel</string>
 </resources>
