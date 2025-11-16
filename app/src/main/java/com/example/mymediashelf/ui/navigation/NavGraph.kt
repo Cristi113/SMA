@@ -41,7 +41,7 @@ fun NavGraph(
 
         /*composable(Screen.Tags.route){
             TagsScreen()
-        }
+        }*/
 
         composable(Screen.Lists.route){
             ListsScreen()
@@ -49,6 +49,6 @@ fun NavGraph(
 
         composable(Screen.Search.route){
             SearchScreen()
-        }*/
+        }
     }
 }

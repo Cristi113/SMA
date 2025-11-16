@@ -38,7 +38,40 @@
     <string name="items_save">Save</string>
     <string name="items_delete">Delete</string>
 
+    <string name="lists_title">Lists</string>
+    <string name="lists_your_lists">Your Lists</string>
+    <string name="lists_no_lists">No lists yet</string>
+    <string name="lists_no_list_selected">No list selected</string>
+    <string name="lists_select_or_create">Select a list or create a new one</string>
+    <string name="lists_add_new">Create New List</string>
+    <string name="lists_name_label">Name</string>
+    <string name="lists_name_hint">Enter list name</string>
+    <string name="lists_create_button">Create List</string>
+    <string name="lists_save">Save</string>
+    <string name="lists_open">Open</string>
+    <string name="lists_list_title">%1$s</string>
+    <string name="lists_select_item">Select items</string>
+    <string name="lists_add_item">Add items</string>
+    <string name="lists_no_items">No items in this list</string>
+    <string name="lists_remove_item">Remove</string>
+    <string name="empty">N/A</string>
+
     <string name="search_screen_title">Search</string>
+
+    <string name="search_title">Search Items</string>
+    <string name="search_filters">Search Filters</string>
+    <string name="search_year">Year</string>
+    <string name="search_all_tags">All tags</string>
+    <string name="search_button">Search</string>
+    <string name="search_no_results">No items found</string>
+    <string name="search_results">Results: %1$d</string>
+
+    <string name="items_search_hint">Search title</string>
+    <string name="items_filter_all_types">All types</string>
+    <string name="items_filter_all_status">All status</string>
+    <string name="items_tags">Tags</string>
+    <string name="items_filter_favorites_only">Favorites only</string>
+
 
     <string name="edit">Edit</string>
     <string name="cancel">Cancel</string>
