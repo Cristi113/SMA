@@ -56,6 +56,15 @@
     <string name="lists_remove_item">Remove</string>
     <string name="empty">N/A</string>
 
+    <string name="tags_title">Tags</string>
+    <string name="tags_no_tags">No tags yet</string>
+    <string name="tags_add_new">Add New Tag</string>
+    <string name="tags_name_label">Name</string>
+    <string name="tags_name_hint">Enter tag name</string>
+    <string name="tags_add_button">Add Tag</string>
+    <string name="tags_save">Save</string>
+    <string name="tags_delete">Delete</string>
+
     <string name="search_screen_title">Search</string>
 
     <string name="search_title">Search Items</string>

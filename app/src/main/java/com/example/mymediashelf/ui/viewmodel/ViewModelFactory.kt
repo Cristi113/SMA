@@ -24,6 +24,9 @@ class ViewModelFactory(
             modelClass.isAssignableFrom(ListsViewModel::class.java) -> {
                 ListsViewModel(listRepository, itemRepository) as T
             }
+            modelClass.isAssignableFrom(TagsViewModel::class.java) -> {
+                TagsViewModel(tagRepository, itemRepository) as T
+            }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
     }
