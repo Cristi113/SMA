@@ -43,7 +43,7 @@ fun rememberShakeDetector(
 class ShakeDetector(
     private val sensorManager: SensorManager,
     private val onShake: () -> Unit,
-    private val threshold: Float = 200f
+    private val threshold: Float = 3000f
 ) : SensorEventListener {
 
     private var lastUpdate: Long = 0
@@ -52,8 +52,10 @@ class ShakeDetector(
     private var lastZ: Float = 0f
     private var shakeCount: Int = 0
     private var lastShakeTime: Long = 0
-    private val SHAKE_SLOP_TIME_MS = 800
-    private val MIN_SHAKE_COUNT = 6
+    private val SHAKE_SLOP_TIME_MS = 2000
+    private val MIN_SHAKE_COUNT = 3
+    private var lastShakeTrigger: Long = 0
+    private val SHAKE_DEBOUNCE_MS = 3000L
 
     fun start() {
         val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -69,7 +71,12 @@ class ShakeDetector(
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
             val currentTime = System.currentTimeMillis()
-            if ((currentTime - lastUpdate) > 150) {
+            
+            if (currentTime - lastShakeTrigger < SHAKE_DEBOUNCE_MS) {
+                return
+            }
+            
+            if ((currentTime - lastUpdate) > 200) {
                 val diffTime = currentTime - lastUpdate
                 lastUpdate = currentTime
 
@@ -93,6 +100,7 @@ class ShakeDetector(
                     lastShakeTime = currentTime
 
                     if (shakeCount >= MIN_SHAKE_COUNT) {
+                        lastShakeTrigger = currentTime
                         onShake()
                         shakeCount = 0
                     }

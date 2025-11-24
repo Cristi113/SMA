@@ -24,7 +24,6 @@ import com.mymediashelf.app.R
 import com.mymediashelf.app.domain.model.Item
 import com.mymediashelf.app.domain.model.MediaList
 import com.mymediashelf.app.ui.components.*
-import com.mymediashelf.app.ui.utils.rememberShakeDetector
 import com.mymediashelf.app.ui.viewmodel.ListsViewModel
 import com.mymediashelf.app.ui.viewmodel.viewModelWithFactory
 
@@ -35,14 +34,17 @@ fun ListsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val selectedList = uiState.selectedList
+    var showListDialog by remember { mutableStateOf(false) }
+    var selectedItemIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
 
-    rememberShakeDetector(
-        onShake = {
-            if (selectedList != null && selectedList.items.isNotEmpty()) {
-                viewModel.getRandomItemFromSelectedList()
-            }
+    LaunchedEffect(selectedList?.id) {
+        if (selectedList != null) {
+            selectedItemIds = selectedList.items.map { it.id }.toSet()
+            showListDialog = true
+        } else {
+            showListDialog = false
         }
-    )
+    }
 
     Scaffold(
         topBar = {
@@ -112,23 +114,7 @@ fun ListsScreen(
                     }
                 }
 
-                if (selectedList != null) {
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                    ListContentSection(
-                        list = selectedList,
-                        allItems = uiState.allItems,
-                        onAddItem = { itemId ->
-                            viewModel.addItemToList(selectedList.id, itemId)
-                        },
-                        onRemoveItem = { itemId ->
-                            viewModel.removeItemFromList(selectedList.id, itemId)
-                        },
-                        onSaveItems = { itemIds ->
-                            viewModel.updateListItems(selectedList.id, itemIds)
-                        }
-                    )
-                } else if (uiState.lists.isNotEmpty()) {
+                if (uiState.lists.isNotEmpty() && selectedList == null) {
                     Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                     val context = LocalContext.current
@@ -146,6 +132,85 @@ fun ListsScreen(
         RandomItemDialog(
             item = uiState.randomItem,
             onDismiss = { viewModel.dismissRandomDialog() }
+        )
+    }
+
+    if (showListDialog && selectedList != null) {
+        AlertDialog(
+            onDismissRequest = { 
+                showListDialog = false
+            },
+            title = {
+                Text(
+                    "Select Items for ${selectedList.name}",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            text = {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(uiState.allItems) { item ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = item.title,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = "${item.type.name.lowercase()} • ${item.year ?: "N/A"}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF6B7280)
+                                )
+                            }
+                            Checkbox(
+                                checked = selectedItemIds.contains(item.id),
+                                onCheckedChange = { checked ->
+                                    selectedItemIds = if (checked) {
+                                        selectedItemIds + item.id
+                                    } else {
+                                        selectedItemIds - item.id
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextButton(onClick = { 
+                        showListDialog = false
+                    }) {
+                        Text("Cancel")
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.updateListItems(selectedList.id, selectedItemIds.toList())
+                            showListDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFFA500),
+                            contentColor = Color(0xFF5D4037)
+                        )
+                    ) {
+                        Icon(Icons.Default.Save, null, modifier = Modifier.size(18.dp), tint = Color(0xFF5D4037))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Save ${selectedItemIds.size} item(s)", color = Color(0xFF5D4037))
+                    }
+                }
+            }
         )
     }
 }
@@ -384,17 +449,6 @@ fun ListItemCard(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        val context = LocalContext.current
-                        Button(
-                            onClick = onSelect,
-                            modifier = Modifier.size(48.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF1E3A8A),
-                                contentColor = Color(0xFFFFFFFF)
-                            )
-                        ) {
-                            Text(context.getString(R.string.lists_open), color = Color(0xFFFFFFFF))
-                        }
                         IconButton(
                             onClick = { isEditing = true }
                         ) {
@@ -640,8 +694,8 @@ fun ListContentSection(
                                 },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF10B981), // Green
-                                    contentColor = Color(0xFFFFFFFF) // White text
+                                    containerColor = Color(0xFF10B981),
+                                    contentColor = Color(0xFFFFFFFF)
                                 )
                             ) {
                                 Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp), tint = Color(0xFFFFFFFF))
@@ -653,8 +707,8 @@ fun ListContentSection(
                                 onClick = { expandedItemSelect = true },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF1E3A8A), // Dark blue
-                                    contentColor = Color(0xFFFFFFFF) // White text
+                                    containerColor = Color(0xFF1E3A8A),
+                                    contentColor = Color(0xFFFFFFFF)
                                 )
                             ) {
                                 Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp), tint = Color(0xFFFFFFFF))
