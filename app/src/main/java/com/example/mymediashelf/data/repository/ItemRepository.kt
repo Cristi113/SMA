@@ -8,16 +8,20 @@ import com.mymediashelf.app.domain.model.Item
 import com.mymediashelf.app.domain.model.ItemStatus
 import com.mymediashelf.app.domain.model.ItemType
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flow
 
 class ItemRepository(
     private val itemDao: ItemDao,
     private val itemTagDao: ItemTagDao
 ) {
     fun getAllItems(): Flow<List<Item>> {
-        return itemDao.getAllItemsFlow().map { entities ->
-            entities.map { entity ->
-                entity.toDomain()
+        return flow {
+            itemDao.getAllItemsFlow().collect { entities ->
+                val items = entities.map { entity ->
+                    val tags = itemTagDao.getTagsForItem(entity.id)
+                    entity.toDomain().copy(tags = tags.map { it.toDomain() })
+                }
+                emit(items)
             }
         }
     }
@@ -29,15 +33,19 @@ class ItemRepository(
         status: ItemStatus? = null,
         year: Int? = null
     ): Flow<List<Item>> {
-        return itemDao.getFilteredItemsFlow(
-            query = query?.takeIf { it.isNotBlank() },
-            type = type?.name?.lowercase(),
-            favorite = favorite?.let { if (it) 1 else 0 },
-            status = status?.name?.lowercase(),
-            year = year
-        ).map { entities ->
-            entities.map { entity ->
-                entity.toDomain()
+        return flow {
+            itemDao.getFilteredItemsFlow(
+                query = query?.takeIf { it.isNotBlank() },
+                type = type?.name?.lowercase(),
+                favorite = favorite?.let { if (it) 1 else 0 },
+                status = status?.name?.lowercase(),
+                year = year
+            ).collect { entities ->
+                val items = entities.map { entity ->
+                    val tags = itemTagDao.getTagsForItem(entity.id)
+                    entity.toDomain().copy(tags = tags.map { it.toDomain() })
+                }
+                emit(items)
             }
         }
     }
@@ -70,7 +78,6 @@ class ItemRepository(
         val entity = ItemEntity.fromDomain(item)
         val itemId = itemDao.insertItem(entity)
 
-        // Insert tags if any
         item.tags.forEach { tag ->
             itemTagDao.insertItemTag(ItemTagCrossRef(itemId, tag.id))
         }
@@ -82,7 +89,6 @@ class ItemRepository(
         val entity = ItemEntity.fromDomain(item)
         itemDao.updateItem(entity)
 
-        // Update tags
         itemTagDao.deleteAllTagsForItem(item.id)
         item.tags.forEach { tag ->
             itemTagDao.insertItemTag(ItemTagCrossRef(item.id, tag.id))
@@ -99,10 +105,14 @@ class ItemRepository(
 
     suspend fun addTagToItem(itemId: Long, tagId: Long) {
         itemTagDao.insertItemTag(ItemTagCrossRef(itemId, tagId))
+        val entity = itemDao.getItemById(itemId)
+        entity?.let { itemDao.updateItem(it) }
     }
 
     suspend fun removeTagFromItem(itemId: Long, tagId: Long) {
         itemTagDao.deleteItemTag(itemId, tagId)
+        val entity = itemDao.getItemById(itemId)
+        entity?.let { itemDao.updateItem(it) }
     }
 
 
