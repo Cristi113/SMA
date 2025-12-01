@@ -14,7 +14,7 @@ import com.mymediashelf.app.data.local.entity.*
         ListEntity::class,
         ListItemCrossRef::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 abstract class MediaShelfDatabase : RoomDatabase(){

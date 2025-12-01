@@ -14,11 +14,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import com.mymediashelf.app.ui.theme.GradientItemsEnd
 import com.mymediashelf.app.ui.theme.GradientItemsMiddle
 import com.mymediashelf.app.ui.theme.GradientItemsStart
@@ -91,7 +96,8 @@ fun ItemsScreen(
                     },
                     onAddItem = { item ->
                         viewModel.addItem(item)
-                    }
+                    },
+                    viewModel = viewModel
                 )
 
                 FiltersSection(
@@ -137,7 +143,8 @@ fun ItemsScreen(
                                 },
                                 onRemoveTag = { itemId, tagId ->
                                     viewModel.removeTagFromItem(itemId, tagId)
-                                }
+                                },
+                                viewModel = viewModel
                             )
                         }
                     }
@@ -159,7 +166,8 @@ fun ItemsScreen(
 fun AddItemSection(
     allTags: List<com.mymediashelf.app.domain.model.Tag>,
     onCreateTag: (String) -> Unit,
-    onAddItem: (Item) -> Unit
+    onAddItem: (Item) -> Unit,
+    viewModel: ItemsViewModel? = null
 ) {
     var itemTitle by remember { mutableStateOf("") }
     var itemType by remember { mutableStateOf(ItemType.MOVIE) }
@@ -167,14 +175,19 @@ fun AddItemSection(
     var itemStatus by remember { mutableStateOf(ItemStatus.PLANNED) }
     var itemFavorite by remember { mutableStateOf(false) }
     var itemRating by remember { mutableStateOf("") }
+    var itemImdbRating by remember { mutableStateOf<Float?>(null) }
     var itemComment by remember { mutableStateOf("") }
     var tagInputMode by remember { mutableStateOf(false) }
     var selectedTagId by remember { mutableStateOf<Long?>(null) }
     var newTagName by remember { mutableStateOf("") }
+    var isLoadingImdb by remember { mutableStateOf(false) }
+    var imdbError by remember { mutableStateOf<String?>(null) }
 
     var expandedType by remember { mutableStateOf(false) }
     var expandedStatus by remember { mutableStateOf(false) }
     var expandedTag by remember { mutableStateOf(false) }
+    
+    val coroutineScope = rememberCoroutineScope()
 
     MediaCard(
         cardColor = com.mymediashelf.app.ui.theme.CardBackgroundPrimary,
@@ -313,21 +326,86 @@ fun AddItemSection(
                 Text(context.getString(R.string.items_favorite_label), color = Color(0xFF1F2937))
             }
 
-            OutlinedTextField(
-                value = itemRating,
-                onValueChange = { itemRating = it },
-                label = { Text(context.getString(R.string.items_rating_label), color = Color(0xFF1F2937)) },
-                placeholder = { Text(context.getString(R.string.items_rating_hint), color = Color(0xFF6B7280)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color(0xFF000000),
-                    unfocusedTextColor = Color(0xFF1F2937),
-                    focusedLabelColor = Color(0xFF1F2937),
-                    unfocusedLabelColor = Color(0xFF6B7280)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = itemRating,
+                    onValueChange = { itemRating = it },
+                    label = { Text(context.getString(R.string.items_rating_label), color = Color(0xFF1F2937)) },
+                    placeholder = { Text("Ex: 8.7", color = Color(0xFF6B7280)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color(0xFF000000),
+                        unfocusedTextColor = Color(0xFF1F2937),
+                        focusedLabelColor = Color(0xFF1F2937),
+                        unfocusedLabelColor = Color(0xFF6B7280)
+                    )
                 )
-            )
+                if (itemType == ItemType.MOVIE && viewModel != null) {
+                    Button(
+                        onClick = {
+                            if (itemTitle.isNotBlank()) {
+                                isLoadingImdb = true
+                                imdbError = null
+                                coroutineScope.launch {
+                                    try {
+                                        val rating = viewModel.fetchImdbRating(
+                                            itemTitle,
+                                            itemYear.toIntOrNull()
+                                        )
+                                        if (rating != null) {
+                                            itemImdbRating = rating
+                                            imdbError = null
+                                        } else {
+                                            imdbError = "Filmul nu a fost gasit sau nu are rating IMDB"
+                                        }
+                                    } catch (e: Exception) {
+                                        imdbError = "Eroare: ${e.message ?: "Nu s-a putut conecta la IMDB"}"
+                                    } finally {
+                                        isLoadingImdb = false
+                                    }
+                                }
+                            }
+                        },
+                        enabled = !isLoadingImdb && itemTitle.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF1E3A8A),
+                            contentColor = Color(0xFFFFFFFF)
+                        )
+                    ) {
+                        if (isLoadingImdb) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = Color(0xFFFFFFFF),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("IMDB", style = MaterialTheme.typography.labelSmall, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+            if (itemImdbRating != null) {
+                Text(
+                    text = "⭐ IMDB: ${String.format("%.1f", itemImdbRating)}/10",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF1E3A8A),
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+            }
+            if (imdbError != null) {
+                Text(
+                    text = imdbError!!,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFDC2626),
+                    fontSize = 11.sp
+                )
+            }
 
             OutlinedTextField(
                 value = itemComment,
@@ -452,7 +530,8 @@ fun AddItemSection(
                                 year = itemYear.toIntOrNull(),
                                 status = itemStatus,
                                 favorite = itemFavorite,
-                                rating = itemRating.toIntOrNull()?.takeIf { it in 1..10 },
+                                rating = itemRating.toFloatOrNull()?.takeIf { it in 1.0f..10.0f },
+                                imdbRating = itemImdbRating,
                                 comment = itemComment.trim().takeIf { it.isNotBlank() },
                                 tags = finalTag?.let { listOf(it) } ?: emptyList()
                             )
@@ -463,6 +542,7 @@ fun AddItemSection(
                         itemStatus = ItemStatus.PLANNED
                         itemFavorite = false
                         itemRating = ""
+                        itemImdbRating = null
                         itemComment = ""
                         selectedTagId = null
                         newTagName = ""
@@ -669,7 +749,8 @@ fun ItemCard(
     onUpdate: (Item) -> Unit,
     onDelete: (Item) -> Unit,
     onAddTag: (Long, Long) -> Unit,
-    onRemoveTag: (Long, Long) -> Unit
+    onRemoveTag: (Long, Long) -> Unit,
+    viewModel: ItemsViewModel? = null
 ) {
     var isEditing by remember { mutableStateOf(false) }
     var editedTitle by remember { mutableStateOf(item.title) }
@@ -678,7 +759,19 @@ fun ItemCard(
     var editedStatus by remember { mutableStateOf(item.status) }
     var editedFavorite by remember { mutableStateOf(item.favorite) }
     var editedRating by remember { mutableStateOf(item.rating?.toString() ?: "") }
+    var editedImdbRating by remember { mutableStateOf(item.imdbRating) }
     var editedComment by remember { mutableStateOf(item.comment ?: "") }
+
+    LaunchedEffect(item.id) {
+        editedTitle = item.title
+        editedType = item.type
+        editedYear = item.year?.toString() ?: ""
+        editedStatus = item.status
+        editedFavorite = item.favorite
+        editedRating = item.rating?.toString() ?: ""
+        editedImdbRating = item.imdbRating
+        editedComment = item.comment ?: ""
+    }
 
     MediaCard {
         Column(
@@ -791,18 +884,68 @@ fun ItemCard(
                     Text("Favorite", color = Color(0xFF1F2937))
                 }
 
-                OutlinedTextField(
-                    value = editedRating,
-                    onValueChange = { editedRating = it },
-                    label = { Text("Rating (1-10)", color = Color(0xFF1F2937)) },
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color(0xFF000000),
-                        unfocusedTextColor = Color(0xFF1F2937),
-                        focusedLabelColor = Color(0xFF1F2937),
-                        unfocusedLabelColor = Color(0xFF6B7280)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = editedRating,
+                        onValueChange = { editedRating = it },
+                        label = { Text("Rating (1.0-10.0)", color = Color(0xFF1F2937)) },
+                        placeholder = { Text("Ex: 8.7", color = Color(0xFF6B7280)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color(0xFF000000),
+                            unfocusedTextColor = Color(0xFF1F2937),
+                            focusedLabelColor = Color(0xFF1F2937),
+                            unfocusedLabelColor = Color(0xFF6B7280)
+                        )
                     )
-                )
+                    if (editedType == ItemType.MOVIE && viewModel != null) {
+                        var isLoadingImdb by remember { mutableStateOf(false) }
+                        val coroutineScope = rememberCoroutineScope()
+                        Button(
+                            onClick = {
+                                if (editedTitle.isNotBlank()) {
+                                    isLoadingImdb = true
+                                    coroutineScope.launch {
+                                        val rating = viewModel.fetchImdbRating(
+                                            editedTitle,
+                                            editedYear.toIntOrNull()
+                                        )
+                                        editedImdbRating = rating
+                                        isLoadingImdb = false
+                                    }
+                                }
+                            },
+                            enabled = !isLoadingImdb && editedTitle.isNotBlank(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF1E3A8A),
+                                contentColor = Color(0xFFFFFFFF)
+                            )
+                        ) {
+                            if (isLoadingImdb) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = Color(0xFFFFFFFF),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text("IMDB", style = MaterialTheme.typography.labelSmall, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+                if (editedImdbRating != null) {
+                    Text(
+                        text = "⭐ IMDB: ${String.format("%.1f", editedImdbRating)}/10",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF1E3A8A),
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    )
+                }
 
                 OutlinedTextField(
                     value = editedComment,
@@ -830,7 +973,8 @@ fun ItemCard(
                                 year = editedYear.toIntOrNull(),
                                 status = editedStatus,
                                 favorite = editedFavorite,
-                                rating = editedRating.toIntOrNull()?.takeIf { it in 1..10 },
+                                rating = editedRating.toFloatOrNull()?.takeIf { it in 1.0f..10.0f },
+                                imdbRating = editedImdbRating,
                                 comment = editedComment.takeIf { it.isNotBlank() }
                             )
                             onUpdate(updatedItem)
@@ -875,12 +1019,25 @@ fun ItemCard(
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFF1F2937)
                         )
-                        if (item.rating != null) {
-                            Text(
-                                text = "⭐ ${item.rating}/10",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF1F2937)
-                            )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (item.rating != null) {
+                                Text(
+                                    text = "⭐ ${String.format("%.1f", item.rating)}/10",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF1F2937)
+                                )
+                            }
+                            if (item.imdbRating != null) {
+                                Text(
+                                    text = "🎬 IMDB: ${String.format("%.1f", item.imdbRating)}/10",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF1E3A8A),
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                )
+                            }
                         }
                         if (item.comment != null) {
                             Text(

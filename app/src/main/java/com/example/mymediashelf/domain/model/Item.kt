@@ -7,7 +7,8 @@ data class Item(
     val year: Int? = null,
     val status: ItemStatus,
     val favorite: Boolean = false,
-    val rating: Int? = null,
+    val rating: Float? = null,
+    val imdbRating: Float? = null,
     val comment: String? = null,
     val tags: List<Tag> = emptyList()
 )

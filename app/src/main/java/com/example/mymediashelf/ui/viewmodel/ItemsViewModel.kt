@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.mymediashelf.app.data.repository.ItemRepository
 import com.mymediashelf.app.data.repository.ListRepository
 import com.mymediashelf.app.data.repository.TagRepository
+import com.mymediashelf.app.data.repository.ImdbRepository
 import com.mymediashelf.app.domain.model.Item
 import com.mymediashelf.app.domain.model.ItemStatus
 import com.mymediashelf.app.domain.model.ItemType
@@ -38,7 +39,8 @@ data class ItemsUiState(
 class ItemsViewModel(
     private val itemRepository: ItemRepository,
     private val tagRepository: TagRepository,
-    private val listRepository: ListRepository
+    private val listRepository: ListRepository,
+    private val imdbRepository: ImdbRepository = ImdbRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ItemsUiState())
@@ -279,6 +281,15 @@ class ItemsViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = e.message)
             }
+        }
+    }
+
+    suspend fun fetchImdbRating(title: String, year: Int? = null): Float? {
+        return try {
+            imdbRepository.getImdbRating(title, year)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e
         }
     }
 }

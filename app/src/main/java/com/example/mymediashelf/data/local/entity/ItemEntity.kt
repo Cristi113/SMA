@@ -15,7 +15,8 @@ data class ItemEntity(
     val year: Int? = null,
     val status: String,
     val favorite: Int = 0,
-    val rating: Int? = null,
+    val rating: Float? = null,
+    val imdbRating: Float? = null,
     val comment: String? = null
 ){
     fun toDomain(): Item{
@@ -27,6 +28,7 @@ data class ItemEntity(
             status = ItemStatus.valueOf(status.uppercase()),
             favorite = favorite == 1,
             rating = rating,
+            imdbRating = imdbRating,
             comment = comment
         )
     }
@@ -41,6 +43,7 @@ data class ItemEntity(
                 status = item.status.name.lowercase(),
                 favorite = if (item.favorite) 1 else 0,
                 rating = item.rating,
+                imdbRating = item.imdbRating,
                 comment = item.comment
             )
         }
